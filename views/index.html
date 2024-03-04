@@ -1,0 +1,158 @@
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Log In</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+    <!-- <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js"></script> -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/7.14.1/firebase-app.js" defer></script>
+    <!-- <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js"></script> -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/7.14.1/firebase-auth.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/js-cookie@3.0.5/dist/js.cookie.min.js" defer></script>
+    <link rel="stylesheet" href="../static/style.css">
+<style>
+    .gradient-custom-2 {
+/* fallback for old browsers */
+background: #fccb90;
+
+/* Chrome 10-25, Safari 5.1-6 */
+background: -webkit-linear-gradient(to right, #ee7724, #d8363a, #dd3675, #b44593);
+
+/* W3C, IE 10+/ Edge, Firefox 16+, Chrome 26+, Opera 12+, Safari 7+ */
+background: linear-gradient(to right, #ee7724, #d8363a, #dd3675, #b44593);
+}
+
+@media (min-width: 768px) {
+.gradient-form {
+height: 100vh !important;
+}
+}
+@media (min-width: 769px) {
+.gradient-custom-2 {
+border-top-right-radius: .3rem;
+border-bottom-right-radius: .3rem;
+}
+}
+</style>  
+</head>
+  <body>
+    <section class="h-100 gradient-form" style="background-color: #eee;">
+        <div class="container py-2 h-100 w-100">
+          <div class="row d-flex justify-content-center align-items-center h-100">
+            <div class="col-xl-10">
+              <div class="card rounded-3 text-black">
+                <div class="row g-0">
+                  <div class="col-lg-6">
+                    <div class="card-body p-md-5 mx-md-4">
+      
+                      <div class="text-center">
+                        <h4 class="mt-1 mb-5 pb-1" id="test">Please login to your account</h4>
+                      </div>
+      
+                      <form id="login">
+                        <div class="form-outline mb-4">
+                            <label class="form-label" for="email">Email</label>
+                          <input type="email" id="email" name="email" class="form-control" placeholder="email address" required />
+                          
+                        </div>
+                        <div class="form-outline mb-4">
+                          <label class="form-label" for="form2Example22">Password</label>
+                          <input type="password" id="password" name="password" class="form-control" required />
+                        </div>
+      
+                        <div class="text-center pt-1 mb-5 pb-1">
+                          <button class="btn btn-primary btn-block fa-lg gradient-custom-2 mb-3" type="submit" id="loginBtn">Log
+                            in</button>
+
+                            <div id="error-message" class="alert alert-danger d-none"></div>
+                          
+                        </div>
+                      </form>
+      
+                    </div>
+                  </div>
+                  <div class="col-lg-6 d-flex align-items-center gradient-custom-2">
+                    <div class="text-white px-3 py-4 p-md-5 mx-md-4">
+                      <h4 class="mb-4">Secure access, simplified experience</h4>
+                      <p class="small mb-0">
+                        Welcome to our portal, where security meets convenience seamlessly.
+With our robust authentication system powered by Firebase, your data remains safe and sound.
+Experience hassle-free login processes that prioritize your peace of mind.
+                      </p>
+                      <p class="small mb-0 mt-3">Note: In order to login, user must be available into firbase database system.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+  </body>
+</html>
+
+<script>
+    window.addEventListener("DOMContentLoaded", () => {
+    fetch("/firebase-config")
+    .then(response => response.json())
+    .then(firebaseConfig => {
+        firebase.initializeApp(firebaseConfig);
+      firebase.auth().setPersistence(firebase.auth.Auth.Persistence.NONE);
+      document
+        .getElementById("login")
+        .addEventListener("submit", (event) => {
+          event.preventDefault();
+          document.getElementById("loginBtn").disabled = true;
+          document.getElementById("loginBtn").innerText = "Please wait...";          
+          const login = event.target.email.value;
+          const password = event.target.password.value;
+          firebase
+            .auth()
+            .signInWithEmailAndPassword(login, password)
+            .then(({ user }) => {
+              return user.getIdToken().then((idToken) => {
+                return fetch("/sessionLogin", {
+                  method: "POST",
+                  headers: {
+                    Accept: "application/json",
+                    "Content-Type": "application/json",
+                    "CSRF-Token": Cookies.get("XSRF-TOKEN"),
+                  },
+                  body: JSON.stringify({ idToken }),
+                });
+              });
+            })
+            .then(() => {
+              return firebase.auth().signOut();
+            })
+            .then(() => {
+              window.location.assign("/profile");
+            }).catch((error) => {
+                document.getElementById("loginBtn").disabled = false;
+                document.getElementById("loginBtn").innerText = "Log in";  
+               // Check for specific error code
+               console.log(error);
+                    if (error.code === "auth/internal-error" || error.code === "auth/wrong-password") {
+                        // Display error message for wrong password
+                        displayErrorMessage("Incorrect password. Please try again.");
+                    } else {
+                        // Display general error message
+                        displayErrorMessage("An error occurred. Please try again later.");
+                    }
+                });
+        //   return false;
+        });
+    })
+    .catch(error => {
+        console.error("Error fetching Firebase configuration:", error);
+    });
+      
+    });
+function displayErrorMessage(message) {
+  const errorMessage = document.getElementById("error-message");
+  errorMessage.textContent = message;
+  errorMessage.classList.remove("d-none");
+}
+  </script>

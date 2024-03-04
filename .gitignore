@@ -1,0 +1,14 @@
+# Ignore node_modules directory
+/node_modules/
+
+# Ignore package-lock.json file
+/package-lock.json
+
+# Ignore serviceAccountKey.json file (assuming it's sensitive or generated)
+/serviceAccountKey.json
+
+# Ignore .env file (if it contains sensitive information)
+/.env
+
+# Assuming you want to ignore the backup file
+/backup\ local\ firebase\ data.txt
